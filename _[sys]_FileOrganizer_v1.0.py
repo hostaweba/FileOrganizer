@@ -340,6 +340,8 @@ def validate_instructions_file(file_path):
 
 # Main menu function
 def main_menu():
+    os.system('cls')
+    
     # Find the instructions file
     instructions_file = find_instructions_file()
 

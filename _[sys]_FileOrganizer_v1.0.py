@@ -1,11 +1,11 @@
-# version1.0
+# version1.0.0
 '''
 1). The program will recursively search all drives (D: to Z:) for the instructions.csv and _[sys]_instructions.csv file.
 2). If the file is found, it will check if the second line contains "set location".
 3). If the condition is met, it will use the directory where the file is found as the source_folder.
 4). If the file is not found or does not contain "set location", an error will be printed, and the program will exit.
 '''
-# version1.1_updates
+# version1.0.1_updates
 '''
 1). Check for _[sys]_ in the full file path:
     *). The script now checks the full path (file_path) for the presence of _[sys]_. If any part of the file path contains _[sys]_, the file is skipped.
@@ -17,6 +17,14 @@
 Note: It will ignore the directory and file if any part of the name contains "_[sys]_". For example, "random_[sys]_name".
 
 '''
+# version1.0.2_updates
+'''
+new function --> organize_files_ignores_All(source_folder)
+
+1). Scans only directories with '_[scan]_' in their name.
+2). Organizes files by date and extension, and ignores others. 
+'''
+
 import os
 import shutil
 import csv
@@ -93,6 +101,85 @@ def organize_files_by_date_and_extension(source_folder):
         writer.writerows(csv_data)
 
     print(f"CSV file saved as {csv_filepath}")
+
+
+#------version1.2
+def organize_files_ignores_All(source_folder):
+    """
+    Scans only directories with '_[scan]_' in their name.
+    Organizes files by date and extension, and ignores others. 
+    """
+    
+    csv_data = []
+    old_structure_folder = os.path.join(source_folder, '_[sys]_old_structure')
+
+    if not os.path.exists(old_structure_folder):
+        os.makedirs(old_structure_folder)
+
+    for foldername, subfolders, filenames in os.walk(source_folder):
+        # Debugging: Print current folder and parent directory
+        print(f"Checking folder: {foldername}")
+        parent_dir = os.path.basename(os.path.dirname(foldername))
+        print(f"Parent directory: {parent_dir}")
+
+        # Check if parent folder's name matches exactly
+        if not parent_dir.startswith('_[scan]_'):
+            print(f"Skipping folder and its contents: {foldername}")
+            continue
+
+        for filename in filenames:
+            file_path = os.path.join(foldername, filename)
+
+            # Get the file's modification time
+            modification_time = os.path.getmtime(file_path)
+            date = datetime.fromtimestamp(modification_time)
+            year = date.strftime('%Y')
+            month = date.strftime('%m')
+
+            # Create year and month folders in the source directory
+            year_folder = os.path.join(source_folder, year)
+            month_folder = os.path.join(year_folder, month)
+
+            if not os.path.exists(year_folder):
+                os.makedirs(year_folder)
+
+            if not os.path.exists(month_folder):
+                os.makedirs(month_folder)
+
+            # Create extension folder
+            extension = filename.split('.')[-1]
+            extension_folder = os.path.join(month_folder, extension)
+
+            if not os.path.exists(extension_folder):
+                os.makedirs(extension_folder)
+
+            # Move the file to the appropriate folder
+            new_file_path = os.path.join(extension_folder, filename)
+            shutil.move(file_path, new_file_path)
+            print(f"Moved file {file_path} to {new_file_path}")
+
+            # Collect data for CSV
+            csv_data.append({
+                'file_path': file_path,
+                'new_path': new_file_path,
+                'modification_time': date.strftime('%Y-%m-%d %H:%M:%S')
+            })
+
+    # Save CSV data
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    csv_filename = f'_[sys]_old_structure_{timestamp}.csv'
+    csv_filepath = os.path.join(old_structure_folder, csv_filename)
+
+    with open(csv_filepath, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=['file_path', 'new_path', 'modification_time'])
+        writer.writeheader()
+        writer.writerows(csv_data)
+
+    print(f"CSV file saved as {csv_filepath}")
+
+
+
+
 
 # Function to revert files back to their original paths based on CSV
 def revert_files_from_csv(source_folder, csv_file):
@@ -185,17 +272,20 @@ def main_menu():
         #sleep(3)
         input("\n\n ---------------------[Press any key to continue]")
         os.system('cls')
-        print("\nMenu:")
-        print("1. Organize files by date and extension")
-        print("2. Revert files from CSV")
-        print("3. Open directory to see history")
-        print("4. Exit")
+        print("\nMenu: Files by date and extension.\n")
+        print("1. Organize files [Skips folder and files that have '_[sys]_' in their name.]")
+        print("2. Organize files [Only scan folder that have '_[scan]_' in their name.]")
+        print("3. Revert files from CSV")
+        print("4. Open directory to see history")
+        print("5. Exit")
 
         choice = input("Enter your choice (1/2/3/4): ").strip()
 
         if choice == '1':
             organize_files_by_date_and_extension(source_folder)
         elif choice == '2':
+            organize_files_ignores_All(source_folder)
+        elif choice == '3':
             old_structure_folder = os.path.join(source_folder, '_[sys]_old_structure')
             if os.path.exists(old_structure_folder):
                 csv_files = list_csv_files(old_structure_folder)
@@ -213,14 +303,14 @@ def main_menu():
                     print("No CSV files found in _[sys]_old_structure.")
             else:
                 print("Error: _[sys]_old_structure folder does not exist.")              
-        elif choice == '3':
+        elif choice == '4':
             directory = os.path.join(source_folder, "_[sys]_old_structure")
             os.startfile(directory)
-        elif choice == '4':
+        elif choice == '5':
             print("Exiting...")
             break
         else:
-            print("Invalid choice. Please enter 1, 2, 3 or 4.")
+            print("Invalid choice. Please enter 1, 2, 3, 4 or 5.")
 
 if __name__ == "__main__":
     main_menu()

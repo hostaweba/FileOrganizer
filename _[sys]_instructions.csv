@@ -1,2 +1,3 @@
-*instructions*
-set location
+*instructions*,*scan relative addresses*
+set location,04\jpeg
+,04\pdf

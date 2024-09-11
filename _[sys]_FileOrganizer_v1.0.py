@@ -123,10 +123,8 @@ def organize_files_ignores_All(source_folder):
         os.makedirs(old_structure_folder)
 
     for foldername, subfolders, filenames in os.walk(source_folder):
-        # Debugging: Print current folder and parent directory
-        print(f"Checking folder: {foldername}")
+
         parent_dir = os.path.basename(os.path.dirname(foldername))
-        print(f"Parent directory: {parent_dir}")
 
         # Check if parent folder's name matches exactly
         if not parent_dir.startswith('_[scan]_'):
@@ -367,14 +365,14 @@ def main_menu():
         #sleep(3)
         input("\n\n ---------------------[Press any key to continue]")
         os.system('cls')
-        print("\nMenu: Files by date and extension.\n")
-        print("1. Organize files [Skips folder and files that have '_[sys]_' in their name.]")
-        print("2. Organize files [Only scan folder that have '_[scan]_' in their name.]")
-        print("3. Organize files [Only that mention in instruction.csv file]")        
-        print("4. Revert files from CSV")
-        print("5. Open directory to see history")
-        print("6. Exit")
-
+        print(60*"=" + "\n    Menu: Organize Files by Date and Extension.\n" + 60*"="+"\n")
+        print("1. [Organize files] \n--> Skip folders and files that have '_[sys]_' in their name.\n")
+        print("2. [Organize files] \n--> Only scan folders that have '_[scan]_' in their name.\n")
+        print("3. [Organize files] \n--> Only scan that mention in '_[sys]_instructions.csv' file.\n")        
+        print(60*"-" + "\n\n4. [Revert files from CSV]")
+        print("5. [Open directory to see history]")
+        print("6. [Exit]\n\n" + 60*"=")
+        
         choice = input("Enter your choice (1/2/3/4/5/6): ").strip()
 
         if choice == '1':

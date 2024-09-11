@@ -17,12 +17,18 @@
 Note: It will ignore the directory and file if any part of the name contains "_[sys]_". For example, "random_[sys]_name".
 
 '''
-# version1.0.2_updates
+#------version1.0.2_updates
 '''
 new function --> organize_files_ignores_All(source_folder)
 
 1). Scans only directories with '_[scan]_' in their name.
 2). Organizes files by date and extension, and ignores others. 
+
+new functions --> organize_files_scan_only_listed_dirs(source_folder, directories_to_scan)
+                  read_directories_from_csv(file_path)
+
+1). Reads directories from a CSV file and organizes files only within listed directories, ignoring others.
+note: it will automatically find csv file for instructions.
 '''
 
 import os
@@ -103,7 +109,7 @@ def organize_files_by_date_and_extension(source_folder):
     print(f"CSV file saved as {csv_filepath}")
 
 
-#------version1.2
+#------version1.0.2
 def organize_files_ignores_All(source_folder):
     """
     Scans only directories with '_[scan]_' in their name.
@@ -178,7 +184,92 @@ def organize_files_ignores_All(source_folder):
     print(f"CSV file saved as {csv_filepath}")
 
 
+def read_directories_from_csv(file_path):
+    directories = []
+    try:
+        with open(file_path, 'r') as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip header row
+            for row in reader:
+                if row and len(row) > 1 and row[1].strip():  # Ensure there is a directory path
+                    directories.append(row[1].strip())
+    except Exception as e:
+        print(f"Error reading CSV file: {e}")
+    return directories
 
+
+def organize_files_scan_only_listed_dirs(source_folder, directories_to_scan):
+    csv_data=[]
+    old_structure_folder = os.path.join(source_folder, '_[sys]_old_structure')
+    
+    if not os.path.exists(old_structure_folder):
+        os.makedirs(old_structure_folder)    
+    
+    # Get absolute paths for directories to scan
+    absolute_dirs_to_scan = [os.path.join(source_folder, d) for d in directories_to_scan]
+
+    for foldername, subfolders, filenames in os.walk(source_folder):
+        # Check if current folder is in the list of directories to scan
+        if foldername not in absolute_dirs_to_scan:
+            print(f"Skipping folder and its contents: {foldername}")
+            continue
+
+        for filename in filenames:
+            file_path = os.path.join(foldername, filename)
+
+            # Skip files if any part of their path contains _[sys]_
+            if '_[sys]_' in file_path:
+                print(f"Skipping file: {file_path} as it's part of _[sys]_")
+                continue
+
+            # Get the file's modification time
+            modification_time = os.path.getmtime(file_path)
+            date = datetime.fromtimestamp(modification_time)
+            year = date.strftime('%Y')
+            month = date.strftime('%m')
+
+            # Create year and month folders in the source directory
+            year_folder = os.path.join(source_folder, year)
+            month_folder = os.path.join(year_folder, month)
+
+            if not os.path.exists(year_folder):
+                os.makedirs(year_folder)
+
+            if not os.path.exists(month_folder):
+                os.makedirs(month_folder)
+
+            # Create extension folder
+            extension = filename.split('.')[-1]
+            extension_folder = os.path.join(month_folder, extension)
+
+            if not os.path.exists(extension_folder):
+                os.makedirs(extension_folder)
+
+            # Move the file to the appropriate folder
+            new_file_path = os.path.join(extension_folder, filename)
+            shutil.move(file_path, new_file_path)
+            print(f"Moved file {file_path} to {new_file_path}")
+
+            # Collect data for CSV
+            csv_data.append({
+                'file_path': file_path,
+                'new_path': new_file_path,
+                'modification_time': date.strftime('%Y-%m-%d %H:%M:%S')
+            })
+
+    # Save CSV data
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    csv_filename = f'_[sys]_old_structure_{timestamp}.csv'
+    csv_filepath = os.path.join(old_structure_folder, csv_filename)
+
+    with open(csv_filepath, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=['file_path', 'new_path', 'modification_time'])
+        writer.writeheader()
+        writer.writerows(csv_data)
+
+    print(f"CSV file saved as {csv_filepath}")
+
+# ---version1.0.2_update finish
 
 
 # Function to revert files back to their original paths based on CSV
@@ -268,6 +359,10 @@ def main_menu():
     source_folder = os.path.dirname(instructions_file)
     print(f"Set location to: {source_folder}")
 
+    # Read the directories to scan from the instructions file
+    directories_to_scan = read_directories_from_csv(instructions_file)
+    
+    
     while True:
         #sleep(3)
         input("\n\n ---------------------[Press any key to continue]")
@@ -275,17 +370,20 @@ def main_menu():
         print("\nMenu: Files by date and extension.\n")
         print("1. Organize files [Skips folder and files that have '_[sys]_' in their name.]")
         print("2. Organize files [Only scan folder that have '_[scan]_' in their name.]")
-        print("3. Revert files from CSV")
-        print("4. Open directory to see history")
-        print("5. Exit")
+        print("3. Organize files [Only that mention in instruction.csv file]")        
+        print("4. Revert files from CSV")
+        print("5. Open directory to see history")
+        print("6. Exit")
 
-        choice = input("Enter your choice (1/2/3/4): ").strip()
+        choice = input("Enter your choice (1/2/3/4/5/6): ").strip()
 
         if choice == '1':
             organize_files_by_date_and_extension(source_folder)
         elif choice == '2':
             organize_files_ignores_All(source_folder)
-        elif choice == '3':
+        elif choice == '3':    
+            organize_files_scan_only_listed_dirs(source_folder, directories_to_scan)
+        elif choice == '4':
             old_structure_folder = os.path.join(source_folder, '_[sys]_old_structure')
             if os.path.exists(old_structure_folder):
                 csv_files = list_csv_files(old_structure_folder)
@@ -303,14 +401,14 @@ def main_menu():
                     print("No CSV files found in _[sys]_old_structure.")
             else:
                 print("Error: _[sys]_old_structure folder does not exist.")              
-        elif choice == '4':
+        elif choice == '5':
             directory = os.path.join(source_folder, "_[sys]_old_structure")
             os.startfile(directory)
-        elif choice == '5':
+        elif choice == '6':
             print("Exiting...")
             break
         else:
-            print("Invalid choice. Please enter 1, 2, 3, 4 or 5.")
+            print("Invalid choice. Please enter 1, 2, 3, 4, 5 or 6.")
 
 if __name__ == "__main__":
     main_menu()

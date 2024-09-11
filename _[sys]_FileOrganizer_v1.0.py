@@ -29,6 +29,8 @@ new functions --> organize_files_scan_only_listed_dirs(source_folder, directorie
 
 1). Reads directories from a CSV file and organizes files only within listed directories, ignoring others.
 note: it will automatically find csv file for instructions.
+
+2). add option to go back in "Available csv files" menu
 '''
 
 import os
@@ -113,7 +115,7 @@ def organize_files_by_date_and_extension(source_folder):
 def organize_files_ignores_All(source_folder):
     """
     Scans only directories with '_[scan]_' in their name.
-    Organizes files by date and extension, and ignores others. 
+    Organizes files by date and extension, and ignores others.
     """
     
     csv_data = []
@@ -123,11 +125,8 @@ def organize_files_ignores_All(source_folder):
         os.makedirs(old_structure_folder)
 
     for foldername, subfolders, filenames in os.walk(source_folder):
-
-        parent_dir = os.path.basename(os.path.dirname(foldername))
-
-        # Check if parent folder's name matches exactly
-        if not parent_dir.startswith('_[scan]_'):
+        # Check if the current foldername contains '_[scan]_' in its name
+        if '_[scan]_' not in os.path.basename(foldername):
             print(f"Skipping folder and its contents: {foldername}")
             continue
 
@@ -340,7 +339,7 @@ def validate_instructions_file(file_path):
 
 # Main menu function
 def main_menu():
-    os.system('cls')
+    os.system('cls' if os.name == 'nt' else 'clear')
     
     # Find the instructions file
     instructions_file = find_instructions_file()
@@ -362,20 +361,18 @@ def main_menu():
     # Read the directories to scan from the instructions file
     directories_to_scan = read_directories_from_csv(instructions_file)
     
-    
     while True:
-        #sleep(3)
         input("\n\n ---------------------[Press any key to continue]")
-        os.system('cls')
-        print(60*"=" + "\n    Menu: Organize Files by Date and Extension.\n" + 60*"="+"\n")
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print(61*"=" + "\n    Menu: Organize Files by Date and Extension.\n" + 61*"="+"\n")
         print("1. [Organize files] \n--> Skip folders and files that have '_[sys]_' in their name.\n")
         print("2. [Organize files] \n--> Only scan folders that have '_[scan]_' in their name.\n")
         print("3. [Organize files] \n--> Only scan that mention in '_[sys]_instructions.csv' file.\n")        
-        print(60*"-" + "\n\n4. [Revert files from CSV]")
+        print(61*"-" + "\n\n4. [Revert files from CSV]")
         print("5. [Open directory to see history]")
-        print("6. [Exit]\n\n" + 60*"=")
+        print("0. [Exit]\n\n" + 61*"=")
         
-        choice = input("Enter your choice (1/2/3/4/5/6): ").strip()
+        choice = input("Enter your choice (1/2/3/4/5/0): ").strip()
 
         if choice == '1':
             organize_files_by_date_and_extension(source_folder)
@@ -388,27 +385,39 @@ def main_menu():
             if os.path.exists(old_structure_folder):
                 csv_files = list_csv_files(old_structure_folder)
                 if csv_files:
-                    print("Available CSV files:")
-                    for i, file in enumerate(csv_files):
-                        print(f"{i + 1}. {file}")
-                    csv_choice = int(input("Select a CSV file by number: ").strip())
-                    if 1 <= csv_choice <= len(csv_files):
-                        csv_filename = csv_files[csv_choice - 1]
-                        revert_files_from_csv(source_folder, csv_filename)
-                    else:
-                        print("Invalid choice.")
+                    while True:
+                        os.system('cls' if os.name == 'nt' else 'clear')
+                        print("Available CSV files:")
+                        for i, file in enumerate(csv_files):
+                            print(f"{i + 1}. {file}")
+                        print("0. Go Back")
+                        try:
+                            csv_choice = input("Select a CSV file by number: ").strip()
+                            if csv_choice == '0':
+                                break  # Exit the inner loop and return to the main menu
+                            csv_choice = int(csv_choice)
+                            if 1 <= csv_choice <= len(csv_files):
+                                csv_filename = csv_files[csv_choice - 1]
+                                revert_files_from_csv(source_folder, csv_filename)
+                            else:
+                                print("Invalid choice. Please select a number from the list.")
+                        except ValueError:
+                            print("Invalid input. Please enter a valid number.")
                 else:
                     print("No CSV files found in _[sys]_old_structure.")
             else:
-                print("Error: _[sys]_old_structure folder does not exist.")              
+                print("Error: _[sys]_old_structure folder does not exist.")         
         elif choice == '5':
             directory = os.path.join(source_folder, "_[sys]_old_structure")
-            os.startfile(directory)
-        elif choice == '6':
+            if os.path.exists(directory):
+                os.startfile(directory)
+            else:
+                print("Error: _[sys]_old_structure folder does not exist.")
+        elif choice == '0':
             print("Exiting...")
             break
         else:
-            print("Invalid choice. Please enter 1, 2, 3, 4, 5 or 6.")
+            print("Invalid choice. Please enter 1, 2, 3, 4, 5 or 0.")
 
 if __name__ == "__main__":
     main_menu()

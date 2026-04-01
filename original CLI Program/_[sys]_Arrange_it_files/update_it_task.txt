@@ -1,0 +1,4 @@
+1. dont scan directories, mentioned  in the .csv file. 
+like_ 2020,2021,2022,2023,2024.... 
+
+2. only scan folder that have text_in_name=input('type the unique identifier for scan folder: ')

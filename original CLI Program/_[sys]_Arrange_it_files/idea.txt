@@ -1,0 +1,24 @@
+--------------------
+directory Structure
+--------------------
+----------------------------------------------------------------------------
+
+Category/year/month (recommended)
+	or
+Category/year/month/day
+
+e.g.
+Photos/2021/01/photo.jpg
+Photos/2022/01/photo.png
+...
+Other/2021/01/file.tmp
+
+------------------------------------------------------------------------------
+
+_[one]_
+Any folder with this symbol treat as a file and move to folder.
+
+e.g.
+Folders/myPics_[one]_/subfolders/files.ext
+
+------------------------------------------------------------------------------
